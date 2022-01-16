@@ -1,0 +1,3 @@
+secret:
+  access-token: ${access.token}
+  secret-token: ${secret.token}
