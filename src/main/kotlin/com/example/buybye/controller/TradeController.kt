@@ -2,6 +2,7 @@ package com.example.buybye.controller
 
 import com.example.buybye.auth.AuthTokenGenerator
 import com.example.buybye.domain.candle.Candle
+import com.example.buybye.engine.TradeEngine
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
+import java.time.LocalDateTime
 
 @RestController
 class TradeController(
@@ -112,13 +114,22 @@ class TradeController(
 
         // 목표가 계산하기
         val candles = getCandles(periodUnit = "days", count = 2)
-        val yesterdayCandle = candles.minByOrNull(Candle::timestamp)
-        val targetPrice = yesterdayCandle?.opening_price?.toDouble()
-            ?.plus((yesterdayCandle.high_price.toDouble().minus(yesterdayCandle.low_price.toDouble())).times(0.5))
-            ?: 0
+        val yesterdayCandle = candles.minByOrNull(Candle::timestamp)!!
 
-        //      (yesterdayCandle!!.high_price.toInt()+yesterdayCandle.low_price.toInt())
-        return mapOf("currentTradePrice" to currentTradePrice, "targetPrice" to targetPrice)
+        val now = LocalDateTime.now()
+        val mid = LocalDateTime.of(now.year, now.month, now.dayOfMonth, 0, 0, 0).plusDays(1)
+        val engine = TradeEngine()
+        val targetPrice = engine.calculateTargetPrice(
+            openingPrice = yesterdayCandle.opening_price.toDouble(),
+            highPrice = yesterdayCandle.high_price.toDouble(),
+            lowPrice = yesterdayCandle.low_price.toDouble()
+        )
+        return mapOf(
+            "currentTradePrice" to currentTradePrice,
+            "targetPrice" to targetPrice,
+            "now" to now,
+            "mid" to mid
+        )
     }
 
 }
