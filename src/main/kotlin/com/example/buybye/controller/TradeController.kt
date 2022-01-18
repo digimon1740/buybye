@@ -2,7 +2,7 @@ package com.example.buybye.controller
 
 import com.example.buybye.auth.AuthTokenGenerator
 import com.example.buybye.domain.candle.Candle
-import com.example.buybye.engine.TradeEngine
+import com.example.buybye.domain.engine.TradeEngine
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
