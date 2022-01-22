@@ -120,7 +120,7 @@ class TradeController(
         val mid = LocalDateTime.of(now.year, now.month, now.dayOfMonth, 0, 0, 0).plusDays(1)
         val engine = TradeEngine()
         val targetPrice = engine.calculateTargetPrice(
-            openingPrice = yesterdayCandle.opening_price.toDouble(),
+            tradingPrice = yesterdayCandle.trade_price.toDouble(),
             highPrice = yesterdayCandle.high_price.toDouble(),
             lowPrice = yesterdayCandle.low_price.toDouble()
         )
@@ -131,5 +131,18 @@ class TradeController(
             "mid" to mid
         )
     }
+
+    //@Scheduled(cron = "0 0 0 * * *")
+    @GetMapping("/trade")
+    suspend fun trade() {
+        WebClient.builder()
+            .baseUrl("https://hooks.slack.com/services/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")
+            .build()
+            .post()
+            .bodyValue(mapOf("text" to "trade !!"))
+            .retrieve()
+            .awaitBody<String>()
+    }
+
 
 }

@@ -1,3 +1,6 @@
 secret:
   access-token: ${access.token}
   secret-token: ${secret.token}
+
+slack:
+  noti-url: ${slack.noti}
