@@ -3,7 +3,7 @@ package com.example.buybye.controller
 import com.example.buybye.auth.AuthTokenGenerator
 import com.example.buybye.domain.candle.Candle
 import com.example.buybye.domain.engine.TradeEngine
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.example.buybye.utils.SlackNotifier
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.web.bind.annotation.GetMapping
@@ -16,7 +16,7 @@ import java.time.LocalDateTime
 @RestController
 class TradeController(
     private val authTokenGenerator: AuthTokenGenerator,
-    private val objectMapper: ObjectMapper,
+    private val slackNotifier: SlackNotifier,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -135,13 +135,7 @@ class TradeController(
     //@Scheduled(cron = "0 0 0 * * *")
     @GetMapping("/trade")
     suspend fun trade() {
-        WebClient.builder()
-            .baseUrl("https://hooks.slack.com/services/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")
-            .build()
-            .post()
-            .bodyValue(mapOf("text" to "trade !!"))
-            .retrieve()
-            .awaitBody<String>()
+        slackNotifier.notify("구입")
     }
 
 
