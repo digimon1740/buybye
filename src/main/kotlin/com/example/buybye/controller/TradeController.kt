@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
-import java.time.LocalDateTime
 
 @RestController
 class TradeController(
@@ -90,10 +89,20 @@ class TradeController(
     }
 
     // 매수 목표가 조회
-    @GetMapping("/v1/target-price")
-    suspend fun getTargetPrice(
-        @RequestParam(defaultValue = "KRW-BTC") market: String,
-    ): Map<String, Any?> {
+    suspend fun getTargetPrice(market: String = "KRW-BTC"): Double {
+        // 목표가 계산하기
+        val candles = getCandles(periodUnit = "days", count = 2)
+        val yesterdayCandle = candles.minByOrNull(Candle::timestamp)!!
+
+        val engine = TradeEngine()
+        return engine.calculateTargetPrice(
+            tradingPrice = yesterdayCandle.trade_price.toDouble(),
+            highPrice = yesterdayCandle.high_price.toDouble(),
+            lowPrice = yesterdayCandle.low_price.toDouble()
+        )
+    }
+
+    suspend fun getCurrentPrice(market: String = "KRW-BTC"): Double {
         val jwt = authTokenGenerator.generateJwt()
         val baseUrl = "https://api.upbit.com/v1/ticker?markets=${market}"
         val response = WebClient.builder()
@@ -108,34 +117,21 @@ class TradeController(
             .awaitBody<List<Map<String, String>>>()
 
         val responseMap = response.first()
-        // 현재 종가
-        // TODO 반복 주기 필요
-        val currentTradePrice = responseMap["trade_price"]
-
-        // 목표가 계산하기
-        val candles = getCandles(periodUnit = "days", count = 2)
-        val yesterdayCandle = candles.minByOrNull(Candle::timestamp)!!
-
-        val now = LocalDateTime.now()
-        val mid = LocalDateTime.of(now.year, now.month, now.dayOfMonth, 0, 0, 0).plusDays(1)
-        val engine = TradeEngine()
-        val targetPrice = engine.calculateTargetPrice(
-            tradingPrice = yesterdayCandle.trade_price.toDouble(),
-            highPrice = yesterdayCandle.high_price.toDouble(),
-            lowPrice = yesterdayCandle.low_price.toDouble()
-        )
-        return mapOf(
-            "currentTradePrice" to currentTradePrice,
-            "targetPrice" to targetPrice,
-            "now" to now,
-            "mid" to mid
-        )
+        return responseMap["trade_price"]!!.toDouble()
     }
 
     //@Scheduled(cron = "0 0 0 * * *")
     @GetMapping("/trade")
-    suspend fun trade() {
-        slackNotifier.notify("구입")
+    suspend fun trade(): Map<String, Double> {
+        val marKet = "KRW-BTC"
+        val currentPrice = getCurrentPrice(marKet)
+        val targetPrice = getTargetPrice(marKet)
+
+        if (targetPrice < currentPrice) {
+
+        }
+        return mapOf("current" to currentPrice, "targetPrice" to targetPrice)
+        //slackNotifier.notify("구입")
     }
 
 
