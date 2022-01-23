@@ -20,23 +20,6 @@ class TradeController(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @GetMapping("/v1/assets")
-    suspend fun getMyAsset(): String {
-        val jwt = authTokenGenerator.generateJwt()
-        val response = WebClient.builder()
-            .baseUrl("https://api.upbit.com/v1/accounts")
-            .defaultHeaders {
-                it[HttpHeaders.AUTHORIZATION] = "Bearer $jwt"
-                it[HttpHeaders.CONTENT_TYPE] = "application/json"
-            }
-            .build()
-            .get()
-            .retrieve()
-            .awaitBody<String>()
-        return response
-    }
-
-
     @GetMapping("/v1/candles")
     suspend fun getCandles(
         @RequestParam(defaultValue = "minutes") periodUnit: String,
@@ -120,17 +103,40 @@ class TradeController(
         return responseMap["trade_price"]!!.toDouble()
     }
 
+    suspend fun getMyBalance(currency: String = "KRW"): Long {
+        val jwt = authTokenGenerator.generateJwt()
+        val response = WebClient.builder()
+            .baseUrl("https://api.upbit.com/v1/accounts")
+            .defaultHeaders {
+                it[HttpHeaders.AUTHORIZATION] = "Bearer $jwt"
+                it[HttpHeaders.CONTENT_TYPE] = "application/json"
+            }
+            .build()
+            .get()
+            .retrieve()
+            .awaitBody<List<Map<String, Any>>>()
+
+        val balance = response
+            .first { it["currency"] == currency }["balance"] as String
+        return balance.toDouble().toLong()
+    }
+
     //@Scheduled(cron = "0 0 0 * * *")
     @GetMapping("/trade")
-    suspend fun trade(): Map<String, Double> {
+    suspend fun trade(): Map<String, Any> {
         val marKet = "KRW-BTC"
         val currentPrice = getCurrentPrice(marKet)
         val targetPrice = getTargetPrice(marKet)
 
+        val myBalance = getMyBalance()
         if (targetPrice < currentPrice) {
 
         }
-        return mapOf("current" to currentPrice, "targetPrice" to targetPrice)
+        return mapOf(
+            "current" to currentPrice,
+            "targetPrice" to targetPrice,
+            "balance" to myBalance,
+        )
         //slackNotifier.notify("구입")
     }
 
