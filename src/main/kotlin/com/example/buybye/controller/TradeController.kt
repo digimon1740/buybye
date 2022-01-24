@@ -124,7 +124,7 @@ class TradeController(
 
     //@Scheduled(cron = "0 0 0 * * *")
     @GetMapping("/trade")
-    suspend fun trade(): Map<String, Any> {
+    suspend fun trade() = runCatching {
         val market = MarketUnit.`KRW-BTC`
         val currentPrice = getCurrentPrice(market)
         val targetPrice = getTargetPrice()
@@ -137,13 +137,15 @@ class TradeController(
                 slackNotifier.notify("체결완료 매수금액 : $priceToBuy, 목표가 : $targetPrice, 현재가 : $currentPrice")
             }
         }
-        return mapOf(
+        mapOf(
             "current" to currentPrice,
             "targetPrice" to targetPrice,
             "balance" to myBalance,
         )
-        //
-    }
+    }.onFailure {
+        log.error(it.message)
+        slackNotifier.notify("에러 발생 ${it.localizedMessage}")
+    }.getOrNull()
 
     suspend fun order(market: MarketUnit = MarketUnit.`KRW-BTC`, price: Double): Map<String, Any> {
         val params = mapOf(
