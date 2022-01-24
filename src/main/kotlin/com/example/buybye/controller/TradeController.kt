@@ -2,6 +2,7 @@ package com.example.buybye.controller
 
 import com.example.buybye.auth.AuthTokenGenerator
 import com.example.buybye.domain.candle.Candle
+import com.example.buybye.domain.common.MarketUnit
 import com.example.buybye.domain.engine.TradeEngine
 import com.example.buybye.utils.SlackNotifier
 import org.slf4j.LoggerFactory
@@ -72,7 +73,7 @@ class TradeController(
     }
 
     // 매수 목표가 조회
-    suspend fun getTargetPrice(market: String = "KRW-BTC"): Double {
+    suspend fun getTargetPrice(): Double {
         // 목표가 계산하기
         val candles = getCandles(periodUnit = "days", count = 2)
         val yesterdayCandle = candles.minByOrNull(Candle::timestamp)!!
@@ -85,9 +86,9 @@ class TradeController(
         )
     }
 
-    suspend fun getCurrentPrice(market: String = "KRW-BTC"): Double {
+    suspend fun getCurrentPrice(market: MarketUnit = MarketUnit.`KRW-BTC`): Double {
         val jwt = authTokenGenerator.generateJwt()
-        val baseUrl = "https://api.upbit.com/v1/ticker?markets=${market}"
+        val baseUrl = "https://api.upbit.com/v1/ticker?markets=${market.name}"
         val response = WebClient.builder()
             .baseUrl(baseUrl)
             .defaultHeaders {
@@ -124,21 +125,49 @@ class TradeController(
     //@Scheduled(cron = "0 0 0 * * *")
     @GetMapping("/trade")
     suspend fun trade(): Map<String, Any> {
-        val marKet = "KRW-BTC"
-        val currentPrice = getCurrentPrice(marKet)
-        val targetPrice = getTargetPrice(marKet)
+        val market = MarketUnit.`KRW-BTC`
+        val currentPrice = getCurrentPrice(market)
+        val targetPrice = getTargetPrice()
 
         val myBalance = getMyBalance()
         if (targetPrice < currentPrice) {
-
+            if (myBalance > 5000) {
+                val priceToBuy = myBalance.toDouble() * 0.9995
+                order(market, priceToBuy)
+                slackNotifier.notify("체결완료 매수금액 : $priceToBuy, 목표가 : $targetPrice, 현재가 : $currentPrice")
+            }
         }
         return mapOf(
             "current" to currentPrice,
             "targetPrice" to targetPrice,
             "balance" to myBalance,
         )
-        //slackNotifier.notify("구입")
+        //
     }
 
+    suspend fun order(market: MarketUnit = MarketUnit.`KRW-BTC`, price: Double): Map<String, Any> {
+        val params = mapOf(
+            "market" to market.name,
+            "side" to "bid",
+            "price" to price,
+            "ord_type" to "price"
+        )
+        val queryElements = params.map {
+            "${it.key}=${it.value}"
+        }
+        val queryString = queryElements.toTypedArray().joinToString("&")
+        val jwt = authTokenGenerator.generateJwtWithQueryString(queryString)
+        return WebClient.builder()
+            .baseUrl("https://api.upbit.com/v1/orders")
+            .defaultHeaders {
+                it[HttpHeaders.AUTHORIZATION] = "Bearer $jwt"
+                it[HttpHeaders.CONTENT_TYPE] = "application/json"
+            }
+            .build()
+            .post()
+            .bodyValue(params)
+            .retrieve()
+            .awaitBody()
+    }
 
 }

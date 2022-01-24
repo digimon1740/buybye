@@ -23,9 +23,9 @@ class AuthTokenGenerator(
             .sign(algorithm)
     }
 
-    fun generateJwtWithQueryString(query: java.lang.String): String {
+    fun generateJwtWithQueryString(query: String): String {
         val md = MessageDigest.getInstance("SHA-512")
-        md.update(query.getBytes("utf8"))
+        md.update(query.toByteArray())
 
         val queryHash = String.format("%0128x", BigInteger(1, md.digest()))
         val algorithm: Algorithm = Algorithm.HMAC256(secretToken)
