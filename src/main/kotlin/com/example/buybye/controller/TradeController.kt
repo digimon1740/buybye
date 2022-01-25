@@ -5,6 +5,7 @@ import com.example.buybye.domain.engine.TradeEngine
 import com.example.buybye.utils.SlackNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -30,8 +31,9 @@ class TradeController(
         sell()
     }
 
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "* * * * * *")
     fun buyScheduled() = CoroutineScope(Dispatchers.IO).launch {
+        delay(1000)
         buy()
     }
 
