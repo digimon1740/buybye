@@ -44,8 +44,9 @@ class TradeController(
         val targetPrice = tradeEngine.getTargetPrice()
         val btc = tradeEngine.getMyBalance("BTC")
         if (btc > 0.00008) {
-            tradeEngine.sell(market, btc * 0.9995)
-            slackNotifier.notify("매도완료!")
+            val btcToSell = btc * 0.9995
+            tradeEngine.sell(market, btcToSell)
+            slackNotifier.notify("<!channel> 매도완료 매도수량 : $btcToSell, 현재가 : $currentPrice")
         }
 
         mapOf(
@@ -69,7 +70,7 @@ class TradeController(
             if (myBalance > 5000) {
                 val priceToBuy = myBalance * 0.9995
                 tradeEngine.buy(market, priceToBuy)
-                slackNotifier.notify("체결완료 매수금액 : $priceToBuy, 목표가 : $targetPrice, 현재가 : $currentPrice")
+                slackNotifier.notify("<!channel> 체결완료 매수금액 : $priceToBuy, 목표가 : $targetPrice, 현재가 : $currentPrice")
             }
         }
 
