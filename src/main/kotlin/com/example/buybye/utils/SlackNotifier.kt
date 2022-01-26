@@ -1,5 +1,6 @@
 package com.example.buybye.utils
 
+import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
@@ -18,5 +19,11 @@ class SlackNotifier(
             .bodyValue(mapOf("text" to msg))
             .retrieve()
             .awaitBody<String>()
+    }
+
+    fun notifyBlock(msg: String) {
+        runBlocking {
+            notify(msg)
+        }
     }
 }
