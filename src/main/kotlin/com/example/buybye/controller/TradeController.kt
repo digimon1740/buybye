@@ -5,14 +5,12 @@ import com.example.buybye.domain.engine.TradeEngine
 import com.example.buybye.utils.SlackNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
-import java.time.ZoneOffset
 
 @RestController
 class TradeController(
@@ -35,23 +33,11 @@ class TradeController(
 
     @Scheduled(cron = "* * * * * *")
     fun buyScheduled() = CoroutineScope(Dispatchers.IO).launch {
-        delay(1000)
         val now = LocalDateTime.now()
-        val yesterday = now.minusDays(1L)
-        val tomorrow = now.plusDays(1L)
-
-        val nowAsMillis = now.atZone(ZoneOffset.systemDefault()).toInstant().toEpochMilli()
-        val startAsMillis =
-            LocalDateTime.of(yesterday.year, yesterday.month, yesterday.dayOfMonth, 9, 0, 0).atZone(ZoneOffset.systemDefault()).toInstant()
-                .toEpochMilli()
-        val endAsMillis =
-            LocalDateTime.of(tomorrow.year, tomorrow.month, tomorrow.dayOfMonth, 9, 0, 0).atZone(ZoneOffset.systemDefault()).toInstant()
-                .toEpochMilli()
-
-        if (nowAsMillis > startAsMillis && nowAsMillis < endAsMillis) {
+        val startDateTime = LocalDateTime.of(now.year, now.month, now.dayOfMonth, 7, 0, 0)
+        if (now.isAfter(startDateTime)) {
             buy()
         }
-
     }
 
     suspend fun sell() = runCatching {
