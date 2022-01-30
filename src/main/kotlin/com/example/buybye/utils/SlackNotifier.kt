@@ -9,11 +9,12 @@ import org.springframework.web.reactive.function.client.awaitBody
 @Component
 class SlackNotifier(
     @Value("\${slack.noti-url}") private val slackUrl: String,
+    @Value("\${slack.errornoti-url}") private val errorSlackUrl: String,
 ) {
 
-    suspend fun notify(msg: String) {
+    suspend fun notify(msg: String, url: String = slackUrl) {
         WebClient.builder()
-            .baseUrl(slackUrl)
+            .baseUrl(url)
             .build()
             .post()
             .bodyValue(mapOf("text" to msg))
@@ -25,5 +26,9 @@ class SlackNotifier(
         runBlocking {
             notify(msg)
         }
+    }
+
+    suspend fun error(msg: String) {
+        notify(msg, errorSlackUrl)
     }
 }

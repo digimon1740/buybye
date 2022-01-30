@@ -20,6 +20,11 @@ class TradeController(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
+    @GetMapping("/error")
+    suspend fun error() {
+        slackNotifier.error("에러 발생 !!")
+    }
+
     @GetMapping("/sell")
     suspend fun sellManually() = sell()
 
@@ -59,7 +64,7 @@ class TradeController(
         )
     }.onFailure {
         log.error(it.message)
-        slackNotifier.notify("에러 발생 ${it.localizedMessage}")
+        slackNotifier.error("에러 발생 ${it.localizedMessage}")
     }.getOrNull()
 
     suspend fun buy() = runCatching {
@@ -84,6 +89,8 @@ class TradeController(
         )
     }.onFailure {
         log.error(it.message)
-        slackNotifier.notify("에러 발생 ${it.localizedMessage}")
+        slackNotifier.error("에러 발생 ${it.localizedMessage}")
     }.getOrNull()
+
+
 }

@@ -4,6 +4,7 @@ secret:
 
 slack:
   noti-url: ${slack.noti}
+  errornoti-url: ${slack.errornoti}
 
 
 version: 1.0.0
