@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
 
@@ -54,7 +55,7 @@ class TradeController(
         if (btc > 0.00008) {
             val btcToSell = btc * 0.9995
             tradeEngine.sell(market, btcToSell)
-            slackNotifier.notify("<!channel> 매도완료 매도수량 : $btcToSell, 현재가 : $currentPrice")
+            slackNotifier.notify("<!channel> 매도완료 매도수량 : ${btcToSell.toLong()}, 현재가 : ${currentPrice.toLong()}")
         }
 
         mapOf(
@@ -78,7 +79,12 @@ class TradeController(
             if (myBalance > 5000) {
                 val priceToBuy = myBalance * 0.9995
                 tradeEngine.buy(market, priceToBuy)
-                slackNotifier.notify("<!channel> 체결완료 매수금액 : $priceToBuy, 목표가 : $targetPrice, 현재가 : $currentPrice")
+                slackNotifier.notify(
+                    "<!channel> 체결완료 매수금액 : ${priceToBuy.toLong()}, 목표가 : ${targetPrice.toLong()}, 현재가 : ${
+                        currentPrice
+                            .toLong()
+                    }"
+                )
             }
         }
 
@@ -92,5 +98,17 @@ class TradeController(
         slackNotifier.error("에러 발생 ${it.localizedMessage}")
     }.getOrNull()
 
+    @GetMapping("/target")
+    suspend fun getTargetAndCurrentPrice(@RequestParam(defaultValue = "KRW-BTC") marketStr: String): Map<String, Any> {
+        val market = MarketUnit.of(marketStr)
+        val currentPrice = tradeEngine.getCurrentPrice(market)
+        val targetPrice = tradeEngine.getTargetPrice()
+
+        return mapOf(
+            "market" to market,
+            "currentPrice" to currentPrice,
+            "targetPrice" to targetPrice
+        )
+    }
 
 }
