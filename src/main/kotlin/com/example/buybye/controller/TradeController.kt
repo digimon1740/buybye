@@ -99,16 +99,27 @@ class TradeController(
     }.getOrNull()
 
     @GetMapping("/target")
-    suspend fun getTargetAndCurrentPrice(@RequestParam(defaultValue = "KRW-BTC") marketStr: String): Map<String, Any> {
+    suspend fun getTargetAndCurrentPrice(@RequestParam(defaultValue = "KRW-BTC") marketStr: String): String {
         val market = MarketUnit.of(marketStr)
         val currentPrice = tradeEngine.getCurrentPrice(market)
         val targetPrice = tradeEngine.getTargetPrice()
 
-        return mapOf(
-            "market" to market,
-            "currentPrice" to currentPrice,
-            "targetPrice" to targetPrice
-        )
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>Title</title>
+            </head>
+            <body>
+                <ul>
+                    <li> <p style="font-size:25px;">마켓 : $market </p></li> 
+                    <li> <p style="font-size:25px;">현재가 : ${currentPrice.toLong()} </p> </li>
+                    <li> <p style="font-size:25px;">매수 목표가 : ${targetPrice.toLong()} </p> </li>
+                </ul>
+            </body>
+            </html>
+        """.trimIndent()
     }
 
 }
